@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 
 
-class RangePreset(str, Enum):
+class RangePreset(StrEnum):
     LAST_WORKING_DAY = "last-working-day"
     YESTERDAY = "yesterday"
     TODAY = "today"

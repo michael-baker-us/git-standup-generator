@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from standup_generator.timerange import RangePreset, resolve_range
 
 # Fixed reference point: Wednesday 2026-06-24 09:15:00 UTC
-WED = datetime(2026, 6, 24, 9, 15, 0, tzinfo=timezone.utc)
+WED = datetime(2026, 6, 24, 9, 15, 0, tzinfo=UTC)
 
 
 def _dt(year: int, month: int, day: int, hour: int = 0, minute: int = 0) -> datetime:
-    return datetime(year, month, day, hour, minute, 0, tzinfo=timezone.utc)
+    return datetime(year, month, day, hour, minute, 0, tzinfo=UTC)
 
 
 class TestToday:

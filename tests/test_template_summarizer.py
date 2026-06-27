@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -13,9 +13,9 @@ from standup_generator.summarizers.template import TemplateSummarizer, categoriz
 # Helpers
 # ---------------------------------------------------------------------------
 
-_TS = datetime(2026, 6, 26, 9, 0, 0, tzinfo=timezone.utc)
-_SINCE = datetime(2026, 6, 26, 0, 0, 0, tzinfo=timezone.utc)
-_UNTIL = datetime(2026, 6, 26, 9, 0, 0, tzinfo=timezone.utc)
+_TS = datetime(2026, 6, 26, 9, 0, 0, tzinfo=UTC)
+_SINCE = datetime(2026, 6, 26, 0, 0, 0, tzinfo=UTC)
+_UNTIL = datetime(2026, 6, 26, 9, 0, 0, tzinfo=UTC)
 
 
 def _commit(subject: str, repo: str = "api", **kwargs: object) -> Commit:

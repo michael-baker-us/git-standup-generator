@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 
 from standup_generator.models import CategoryGroup, Commit, RepoSummary, StandupReport
 

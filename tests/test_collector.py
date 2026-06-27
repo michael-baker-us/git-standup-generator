@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -115,8 +116,8 @@ def _collect(runner: GitRunner, **kwargs: object) -> list[object]:
         "include_merges": True,
     }
     defaults.update(kwargs)
+
     from standup_generator.git.collector import collect_commits
-    from datetime import datetime
 
     return collect_commits(  # type: ignore[return-value]
         _FAKE_REPO,
@@ -307,7 +308,6 @@ class TestCollectCommits:
         assert "--no-merges" not in log_args
 
     def test_since_until_datetime_serialised_to_iso(self, sample_log_text: str) -> None:
-        from datetime import timezone
 
         captured: list[list[str]] = []
 
@@ -319,8 +319,8 @@ class TestCollectCommits:
 
         from datetime import datetime
 
-        since_dt = datetime(2026, 6, 26, 0, 0, 0, tzinfo=timezone.utc)
-        until_dt = datetime(2026, 6, 26, 23, 59, 59, tzinfo=timezone.utc)
+        since_dt = datetime(2026, 6, 26, 0, 0, 0, tzinfo=UTC)
+        until_dt = datetime(2026, 6, 26, 23, 59, 59, tzinfo=UTC)
 
         collect_commits(
             _FAKE_REPO,

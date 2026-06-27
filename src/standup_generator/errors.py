@@ -18,7 +18,8 @@ class NotAGitRepositoryError(StandupError):
 class GitCommandError(StandupError):
     def __init__(self, args: list[str], returncode: int, stderr: str) -> None:
         super().__init__(f"git {' '.join(args)} failed ({returncode}): {stderr.strip()}")
-        self.cmd_args = args  # TODO(plan): spec says self.args but conflicts with Exception.args under mypy strict
+        # TODO(plan): self.args conflicts with Exception.args under mypy strict
+        self.cmd_args = args
         self.returncode = returncode
         self.stderr = stderr
 

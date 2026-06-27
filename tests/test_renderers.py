@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -9,7 +9,7 @@ from standup_generator.models import CategoryGroup, Commit, RepoSummary, Standup
 from standup_generator.renderers.markdown import MarkdownRenderer
 from standup_generator.renderers.text import TextRenderer
 
-_TZ = timezone.utc
+_TZ = UTC
 _SINCE = datetime(2026, 6, 26, 0, 0, 0, tzinfo=_TZ)
 _UNTIL = datetime(2026, 6, 26, 9, 15, 0, tzinfo=_TZ)
 
@@ -109,7 +109,7 @@ class TestTextRenderer:
 
     def test_commit_lines_have_bullet_subject_sha(self, sample_report: StandupReport) -> None:
         output = TextRenderer().render(sample_report)
-        lines_by_subject = {l: l for l in output.split("\n") if "feat(auth)" in l}
+        lines_by_subject = {ln: ln for ln in output.split("\n") if "feat(auth)" in ln}
         assert len(lines_by_subject) == 1
         commit_line = next(iter(lines_by_subject))
         assert commit_line.startswith("    •")
@@ -118,7 +118,7 @@ class TestTextRenderer:
 
     def test_fix_commit_line(self, sample_report: StandupReport) -> None:
         output = TextRenderer().render(sample_report)
-        fix_lines = [l for l in output.split("\n") if "null session on logout" in l]
+        fix_lines = [ln for ln in output.split("\n") if "null session on logout" in ln]
         assert len(fix_lines) == 1
         assert "99ccaa11" in fix_lines[0]
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from standup_generator.errors import GitCommandError
 
