@@ -50,14 +50,6 @@ _PRESET_LABEL: dict[RangePreset, str] = {
     RangePreset.QUARTER: "Past quarter (90 days)",
 }
 
-_NAV_HINTS = (
-    "  [bold]Tab[/bold] next field"
-    "    [bold]↑ ↓[/bold] choose option"
-    "    [bold]Space[/bold] select"
-    "    [bold]Ctrl+G[/bold] generate now"
-    "    [bold]Ctrl+Q[/bold] quit"
-)
-
 APP_CSS = """
 Screen { background: $surface; }
 
@@ -76,15 +68,6 @@ TabPane { padding: 0; layout: vertical; }
 .tab-foot {
     padding: 0 2 1 2;
     height: auto;
-}
-
-/* ── Persistent nav bar — docked, never scrolls away ────────── */
-#nav-bar {
-    dock: bottom;
-    height: 1;
-    background: $primary-darken-3;
-    color: $text-muted;
-    padding: 0 1;
 }
 
 /* ── Typography ─────────────────────────────────────────────── */
@@ -266,8 +249,6 @@ class StandupTUI(App[None]):
                     id="results-area",
                 )
 
-        # ── Always-visible keyboard reference ────────────────────────────────
-        yield Static(_NAV_HINTS, id="nav-bar")
         yield Footer()
 
     def on_mount(self) -> None:
