@@ -99,8 +99,8 @@ class TestTextRenderer:
 
     def test_repo_headers(self, sample_report: StandupReport) -> None:
         output = TextRenderer().render(sample_report)
-        assert "api  (2 commits, +300/-40)" in output
-        assert "web  (1 commit, +112/-48)" in output
+        assert "api  (2 commits, +300 / -40)" in output
+        assert "web  (1 commit, +112 / -48)" in output
 
     def test_category_headings(self, sample_report: StandupReport) -> None:
         output = TextRenderer().render(sample_report)

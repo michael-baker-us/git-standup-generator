@@ -41,14 +41,21 @@ class TextRenderer:
 
         for repo_summary in report.repos:
             commit_word_r = "commit" if repo_summary.commit_count == 1 else "commits"
-            lines.append(
+            repo_header = (
                 f"{repo_summary.repo}  "
                 f"({repo_summary.commit_count} {commit_word_r}, "
-                f"+{repo_summary.insertions}/-{repo_summary.deletions})"
+                f"+{repo_summary.insertions} / -{repo_summary.deletions})"
             )
+            lines.append(repo_header)
+            lines.append("─" * len(repo_header))
             for group in repo_summary.groups:
                 lines.append(f"  {group.title}")
                 for commit in group.commits:
                     lines.append(f"    • {commit.subject:<{_SUBJECT_WIDTH}}{commit.short_sha}")
+            lines.append("")
+
+        # Strip trailing blank line
+        if lines and lines[-1] == "":
+            lines.pop()
 
         return "\n".join(lines)
