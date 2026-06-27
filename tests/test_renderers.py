@@ -129,8 +129,7 @@ class TestTextRenderer:
     def test_empty_with_author(self, empty_with_author: StandupReport) -> None:
         output = TextRenderer().render(empty_with_author)
         assert output == (
-            "No commits found for dev@example.com "
-            "between 2026-06-26 00:00 and 2026-06-26 09:15."
+            "No commits found for dev@example.com between 2026-06-26 00:00 and 2026-06-26 09:15."
         )
 
     def test_empty_no_author(self, empty_no_author: StandupReport) -> None:
@@ -213,8 +212,7 @@ class TestMarkdownRenderer:
     def test_empty_with_author(self, empty_with_author: StandupReport) -> None:
         output = MarkdownRenderer().render(empty_with_author)
         assert output == (
-            "No commits found for dev@example.com "
-            "between 2026-06-26 00:00 and 2026-06-26 09:15."
+            "No commits found for dev@example.com between 2026-06-26 00:00 and 2026-06-26 09:15."
         )
 
     def test_empty_no_author(self, empty_no_author: StandupReport) -> None:
