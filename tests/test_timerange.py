@@ -47,6 +47,20 @@ class TestWeek:
         assert until == WED
 
 
+class TestMonth:
+    def test_since_is_thirty_days_back(self) -> None:
+        since, until = resolve_range(RangePreset.MONTH, WED)
+        assert since == _dt(2026, 5, 25)
+        assert until == WED
+
+
+class TestQuarter:
+    def test_since_is_ninety_days_back(self) -> None:
+        since, until = resolve_range(RangePreset.QUARTER, WED)
+        assert since == _dt(2026, 3, 26)
+        assert until == WED
+
+
 class TestLastWorkingDay:
     # Monday (weekday 0) → previous Friday
     def test_monday_returns_friday(self) -> None:

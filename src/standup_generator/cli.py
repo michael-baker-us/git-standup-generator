@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.console import Console
 
 from standup_generator import __version__
 from standup_generator.config import Config, OutputFormat, load_config
@@ -29,11 +30,14 @@ from standup_generator.timerange import RangePreset, resolve_range
 
 logger = logging.getLogger(__name__)
 
+_stderr = Console(stderr=True)
+
 app = typer.Typer(
     name="standup",
     help="Generate a standup summary from local git history.",
     add_completion=False,
     no_args_is_help=False,
+    rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
@@ -125,7 +129,11 @@ def main(
     ] = None,
     scan_dirs: Annotated[
         list[Path] | None,
-        typer.Option("--scan-dir", "-s", help="Directory to scan for git repos (repeatable)."),
+        typer.Option(
+            "--scan-dir",
+            "-s",
+            help="Directory to scan for git repos (repeatable).",
+        ),
     ] = None,
     since: Annotated[
         str | None,
@@ -151,6 +159,14 @@ def main(
         OutputFormat,
         typer.Option("--format", "-f", help="Output format."),
     ] = OutputFormat.TEXT,
+    output: Annotated[
+        Path | None,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Write report to this file instead of stdout.",
+        ),
+    ] = None,
     include_merges: Annotated[
         bool,
         typer.Option("--include-merges", help="Include merge commits."),
@@ -159,6 +175,14 @@ def main(
         Path | None,
         typer.Option("--config", "-c", help="Path to a config file."),
     ] = None,
+    interactive: Annotated[
+        bool,
+        typer.Option(
+            "--interactive",
+            "-i",
+            help="Launch an interactive wizard to configure the report.",
+        ),
+    ] = False,
     verbose: Annotated[
         bool,
         typer.Option("--verbose", "-v", help="Log debug info to stderr."),
@@ -175,9 +199,24 @@ def main(
 ) -> None:
     """Generate a standup summary from local git history."""
     configure_logging(verbose)
+
+    output_file: Path | None = output
+
     try:
-        resolved_repos = tuple(repos) if repos else None
-        resolved_scan_dirs = tuple(scan_dirs) if scan_dirs else None
+        if interactive:  # pragma: no cover
+            from standup_generator.interactive import run_wizard
+
+            wizard = run_wizard()
+            resolved_repos = wizard.repos
+            resolved_scan_dirs = wizard.scan_dirs
+            range_preset = wizard.range_preset
+            fmt = wizard.output_format
+            if wizard.output_file is not None:
+                output_file = wizard.output_file
+        else:
+            resolved_repos = tuple(repos) if repos else None
+            resolved_scan_dirs = tuple(scan_dirs) if scan_dirs else None
+
         config = load_config(
             repos=resolved_repos,
             scan_dirs=resolved_scan_dirs,
@@ -192,10 +231,18 @@ def main(
             config_path=config_path,
         )
         now = datetime.now(UTC).astimezone()
-        result = run(config, now=now, runner=subprocess_runner)
-        typer.echo(result)
+
+        with _stderr.status("[dim]Collecting commits…[/dim]", spinner="dots"):
+            result = run(config, now=now, runner=subprocess_runner)
+
+        if output_file is not None:
+            output_file.write_text(result, encoding="utf-8")
+            _stderr.print(f"[green]✓[/green] Report saved to [bold]{output_file}[/bold]")
+        else:
+            typer.echo(result)
+
     except StandupError as e:
-        typer.echo(f"Error: {e}", err=True)
+        _stderr.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(1) from None
 
 

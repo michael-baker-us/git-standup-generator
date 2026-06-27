@@ -11,6 +11,8 @@ class RangePreset(StrEnum):
     YESTERDAY = "yesterday"
     TODAY = "today"
     WEEK = "week"
+    MONTH = "month"
+    QUARTER = "quarter"
 
 
 def _start_of_day(dt: datetime) -> datetime:
@@ -30,6 +32,12 @@ def resolve_range(preset: RangePreset, now: datetime) -> tuple[datetime, datetim
 
     elif preset is RangePreset.WEEK:
         since = _start_of_day(now - timedelta(days=7))
+
+    elif preset is RangePreset.MONTH:
+        since = _start_of_day(now - timedelta(days=30))
+
+    elif preset is RangePreset.QUARTER:
+        since = _start_of_day(now - timedelta(days=90))
 
     else:  # LAST_WORKING_DAY
         weekday = now.weekday()  # Mon=0 … Sun=6
