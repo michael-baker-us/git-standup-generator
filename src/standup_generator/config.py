@@ -19,13 +19,14 @@ class OutputFormat(StrEnum):
 
 
 _ALLOWED_TOML_KEYS = frozenset(
-    {"repos", "author", "all_authors", "range", "format", "include_merges", "verbose"}
+    {"repos", "scan_dirs", "author", "all_authors", "range", "format", "include_merges", "verbose"}
 )
 
 
 @dataclass(frozen=True, slots=True)
 class Config:
     repos: tuple[Path, ...]
+    scan_dirs: tuple[Path, ...]
     author: str | None
     all_authors: bool
     range_preset: RangePreset
@@ -69,6 +70,7 @@ def _load_toml(path: Path) -> dict[str, object]:
 def load_config(
     *,
     repos: tuple[Path, ...] | None = None,
+    scan_dirs: tuple[Path, ...] | None = None,
     author: str | None = None,
     all_authors: bool = False,
     range_preset: RangePreset | None = None,
@@ -85,7 +87,19 @@ def load_config(
     if found is not None:
         file_data = _load_toml(found)
 
-    # repos: CLI > file > default (CWD)
+    # scan_dirs: CLI > file > empty tuple
+    resolved_scan_dirs: tuple[Path, ...]
+    if scan_dirs is not None:
+        resolved_scan_dirs = scan_dirs
+    elif "scan_dirs" in file_data:
+        raw_sd = file_data["scan_dirs"]
+        if not isinstance(raw_sd, list):
+            raise ConfigError("'scan_dirs' must be a list of strings")
+        resolved_scan_dirs = tuple(Path(str(r)).expanduser() for r in raw_sd)
+    else:
+        resolved_scan_dirs = ()
+
+    # repos: CLI > file > default (CWD, only when no scan_dirs are set)
     resolved_repos: tuple[Path, ...]
     if repos is not None:
         resolved_repos = repos
@@ -94,8 +108,10 @@ def load_config(
         if not isinstance(raw, list):
             raise ConfigError("'repos' must be a list of strings")
         resolved_repos = tuple(Path(str(r)).expanduser() for r in raw)
-    else:
+    elif not resolved_scan_dirs:
         resolved_repos = (Path.cwd(),)
+    else:
+        resolved_repos = ()
 
     # author: CLI > file > (resolved at runtime in run())
     resolved_author: str | None = author
@@ -152,6 +168,7 @@ def load_config(
 
     return Config(
         repos=resolved_repos,
+        scan_dirs=resolved_scan_dirs,
         author=resolved_author,
         all_authors=resolved_all_authors,
         range_preset=resolved_preset,

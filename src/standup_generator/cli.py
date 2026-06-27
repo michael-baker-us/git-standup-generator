@@ -17,6 +17,7 @@ from standup_generator import __version__
 from standup_generator.config import Config, OutputFormat, load_config
 from standup_generator.errors import StandupError
 from standup_generator.git.collector import collect_commits
+from standup_generator.git.discover import find_git_repos
 from standup_generator.git.runner import GitRunner, subprocess_runner
 from standup_generator.logging_setup import configure_logging
 from standup_generator.models import Commit
@@ -39,13 +40,28 @@ app = typer.Typer(
 
 def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
     """Pure orchestration — testable with injected fakes."""
+    # Build final repo list: explicit repos + repos discovered from scan_dirs, deduped.
+    repos: list[Path] = []
+    seen: set[Path] = set()
+    for repo in config.repos:
+        key = repo.resolve()
+        if key not in seen:
+            seen.add(key)
+            repos.append(repo)
+    for scan_dir in config.scan_dirs:
+        for repo in find_git_repos(scan_dir):
+            key = repo.resolve()
+            if key not in seen:
+                seen.add(key)
+                repos.append(repo)
+
     # Resolve author via git config if not set and all_authors is False.
     author: str | None = config.author
-    if not config.all_authors and author is None and config.repos:
+    if not config.all_authors and author is None and repos:
         try:
-            raw = runner(["config", "user.email"], config.repos[0])
-            resolved = raw.strip()
-            author = resolved if resolved else None
+            raw = runner(["config", "user.email"], repos[0])
+            email = raw.strip()
+            author = email if email else None
         except Exception:
             logger.warning("Could not resolve git config user.email; including all authors.")
 
@@ -71,7 +87,7 @@ def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
 
     # Collect commits from all repos.
     all_commits: list[Commit] = []
-    for repo in config.repos:
+    for repo in repos:
         repo_commits = collect_commits(
             repo,
             since=since_arg,
@@ -106,6 +122,10 @@ def main(
     repos: Annotated[
         list[Path] | None,
         typer.Option("--repo", "-r", help="Repo path (repeatable). Default: config or CWD."),
+    ] = None,
+    scan_dirs: Annotated[
+        list[Path] | None,
+        typer.Option("--scan-dir", "-s", help="Directory to scan for git repos (repeatable)."),
     ] = None,
     since: Annotated[
         str | None,
@@ -157,8 +177,10 @@ def main(
     configure_logging(verbose)
     try:
         resolved_repos = tuple(repos) if repos else None
+        resolved_scan_dirs = tuple(scan_dirs) if scan_dirs else None
         config = load_config(
             repos=resolved_repos,
+            scan_dirs=resolved_scan_dirs,
             author=author,
             all_authors=all_authors,
             range_preset=range_preset,

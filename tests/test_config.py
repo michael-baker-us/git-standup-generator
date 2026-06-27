@@ -16,6 +16,7 @@ def test_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     config = load_config()
     assert config.repos == (Path.cwd(),)
+    assert config.scan_dirs == ()
     assert config.author is None
     assert config.all_authors is False
     assert config.range_preset is RangePreset.LAST_WORKING_DAY
@@ -144,6 +145,33 @@ def test_repos_not_a_list_raises(tmp_path: Path) -> None:
     cfg = tmp_path / "standup.toml"
     cfg.write_text('repos = "not-a-list"\n', encoding="utf-8")
     with pytest.raises(ConfigError, match="'repos' must be a list"):
+        load_config(config_path=cfg)
+
+
+def test_scan_dirs_from_toml(tmp_path: Path) -> None:
+    cfg = tmp_path / "standup.toml"
+    cfg.write_text('scan_dirs = ["~/repos"]\n', encoding="utf-8")
+    config = load_config(config_path=cfg)
+    assert config.scan_dirs == (Path.home() / "repos",)
+
+
+def test_scan_dirs_from_cli(tmp_path: Path) -> None:
+    config = load_config(scan_dirs=(tmp_path,))
+    assert config.scan_dirs == (tmp_path,)
+
+
+def test_scan_dirs_suppresses_cwd_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """When scan_dirs are set and repos aren't, repos should be empty (not CWD)."""
+    monkeypatch.chdir(tmp_path)
+    config = load_config(scan_dirs=(tmp_path,))
+    assert config.repos == ()
+    assert config.scan_dirs == (tmp_path,)
+
+
+def test_scan_dirs_not_a_list_raises(tmp_path: Path) -> None:
+    cfg = tmp_path / "standup.toml"
+    cfg.write_text('scan_dirs = "~/repos"\n', encoding="utf-8")
+    with pytest.raises(ConfigError, match="'scan_dirs' must be a list"):
         load_config(config_path=cfg)
 
 

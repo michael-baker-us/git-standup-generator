@@ -51,9 +51,11 @@ def _make_config(
     until: str | None = None,
     include_merges: bool = False,
     verbose: bool = False,
+    scan_dirs: tuple[Path, ...] = (),
 ) -> Config:
     return Config(
         repos=(repo,),
+        scan_dirs=scan_dirs,
         author=author,
         all_authors=all_authors,
         range_preset=range_preset,
@@ -168,6 +170,7 @@ def test_run_multi_repo(tmp_path: Path) -> None:
     repo_b.mkdir()
     config = Config(
         repos=(repo_a, repo_b),
+        scan_dirs=(),
         author="alice@example.com",
         all_authors=False,
         range_preset=RangePreset.YESTERDAY,
@@ -223,6 +226,48 @@ def test_cli_default_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     result = _CLI_RUNNER.invoke(app, [])
     assert result.exit_code == 0
     assert "feat: add login page" in result.output
+
+
+def test_run_scan_dir_discovers_repos(tmp_path: Path) -> None:
+    """Repos found via scan_dirs are included in the report."""
+    repo_dir = tmp_path / "myrepo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+    config = Config(
+        repos=(),
+        scan_dirs=(tmp_path,),
+        author="alice@example.com",
+        all_authors=False,
+        range_preset=RangePreset.YESTERDAY,
+        since=None,
+        until=None,
+        output_format=OutputFormat.TEXT,
+        include_merges=False,
+        verbose=False,
+    )
+    result = run(config, now=_FIXED_NOW, runner=_make_runner(_SAMPLE_LOG))
+    assert "feat: add login page" in result
+
+
+def test_run_scan_dir_deduplicates(tmp_path: Path) -> None:
+    """A repo present in both repos and scan_dirs is collected only once."""
+    repo_dir = tmp_path / "myrepo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+    config = Config(
+        repos=(repo_dir,),
+        scan_dirs=(tmp_path,),
+        author="alice@example.com",
+        all_authors=False,
+        range_preset=RangePreset.YESTERDAY,
+        since=None,
+        until=None,
+        output_format=OutputFormat.TEXT,
+        include_merges=False,
+        verbose=False,
+    )
+    result = run(config, now=_FIXED_NOW, runner=_make_runner(_SAMPLE_LOG))
+    assert result.count("feat: add login page") == 1
 
 
 def test_cli_format_markdown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
