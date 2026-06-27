@@ -1,0 +1,15 @@
+aaaa0000000000000000000000000000000000aaAlice Developeralice@example.com2026-06-26T09:00:00+00:00feat(auth): add refresh-token rotationImplements RFC-compliant token rotation.
+Closes #42
+
+15	3	src/auth.py
+8	1	tests/test_auth.py
+
+bbbb0000000000000000000000000000000000bbAlice Developeralice@example.com2026-06-26T08:00:00+00:00fix: update logo image
+-	-	assets/logo.png
+
+cccc0000000000000000000000000000000000ccAlice Developeralice@example.com2026-06-26T07:00:00+00:00refactor: extract auth middleware
+20	15	src/middleware.py
+5	0	src/__init__.py
+0	5	tests/test_old.py
+
+dddd0000000000000000000000000000000000ddAlice Developeralice@example.com2026-06-26T06:00:00+00:00Merge branch 'feature/auth' into main
