@@ -53,7 +53,7 @@ def sample_report() -> StandupReport:
     return StandupReport(
         since=_SINCE,
         until=_UNTIL,
-        author="michaelbakerus@gmail.com",
+        author="dev@example.com",
         repos=(api_summary, web_summary),
         total_commits=3,
         total_insertions=412,
@@ -66,7 +66,7 @@ def empty_with_author() -> StandupReport:
     return StandupReport(
         since=_SINCE,
         until=_UNTIL,
-        author="michaelbakerus@gmail.com",
+        author="dev@example.com",
         repos=(),
         total_commits=0,
         total_insertions=0,
@@ -91,7 +91,7 @@ class TestTextRenderer:
     def test_header_contains_dates_and_author(self, sample_report: StandupReport) -> None:
         output = TextRenderer().render(sample_report)
         assert "Standup — Fri 2026-06-26 → Fri 2026-06-26" in output
-        assert "(author: michaelbakerus@gmail.com)" in output
+        assert "(author: dev@example.com)" in output
 
     def test_totals_line(self, sample_report: StandupReport) -> None:
         output = TextRenderer().render(sample_report)
@@ -129,7 +129,7 @@ class TestTextRenderer:
     def test_empty_with_author(self, empty_with_author: StandupReport) -> None:
         output = TextRenderer().render(empty_with_author)
         assert output == (
-            "No commits found for michaelbakerus@gmail.com "
+            "No commits found for dev@example.com "
             "between 2026-06-26 00:00 and 2026-06-26 09:15."
         )
 
@@ -180,7 +180,7 @@ class TestMarkdownRenderer:
 
     def test_author_line(self, sample_report: StandupReport) -> None:
         output = MarkdownRenderer().render(sample_report)
-        assert "**Author:** michaelbakerus@gmail.com" in output
+        assert "**Author:** dev@example.com" in output
 
     def test_window_line(self, sample_report: StandupReport) -> None:
         output = MarkdownRenderer().render(sample_report)
@@ -213,7 +213,7 @@ class TestMarkdownRenderer:
     def test_empty_with_author(self, empty_with_author: StandupReport) -> None:
         output = MarkdownRenderer().render(empty_with_author)
         assert output == (
-            "No commits found for michaelbakerus@gmail.com "
+            "No commits found for dev@example.com "
             "between 2026-06-26 00:00 and 2026-06-26 09:15."
         )
 

@@ -412,7 +412,7 @@ class Config:
 ```toml
 # .standup.toml
 repos = ["~/code/api", "~/code/web"]   # ~ is expanded
-author = "michaelbakerus@gmail.com"
+author = "dev@example.com"
 range = "last-working-day"
 format = "markdown"
 include_merges = false
@@ -486,7 +486,7 @@ Both renderers, when `report.is_empty`, return a single friendly line, e.g.
 
 ### 11.3 `TextRenderer` (default) — example output
 ```
-Standup — Fri 2026-06-26 → Fri 2026-06-26  (author: michaelbakerus@gmail.com)
+Standup — Fri 2026-06-26 → Fri 2026-06-26  (author: dev@example.com)
 3 commits · +412 / -88 across 2 repos
 
 api  (2 commits, +300/-40)
@@ -502,7 +502,7 @@ web  (1 commit, +112/-48)
 ```markdown
 # Standup — 2026-06-26
 
-**Author:** michaelbakerus@gmail.com
+**Author:** dev@example.com
 **Window:** 2026-06-26 00:00 → 2026-06-26 09:15
 **Totals:** 3 commits · +412 / −88 · 2 repos
 
