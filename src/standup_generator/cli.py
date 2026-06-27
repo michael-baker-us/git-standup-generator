@@ -2,11 +2,16 @@
 
 This is the ONLY module permitted to read the real clock, build the real
 subprocess-backed git runner, and write to stdout.
+
+Default behaviour: when no source flag (--repo / --scan-dir / --since) is
+supplied and stdout is a TTY, the full-screen TUI launches automatically.
+Pass any source flag to run non-interactively (useful for scripting).
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -25,6 +30,7 @@ from standup_generator.models import Commit
 from standup_generator.renderers.base import Renderer
 from standup_generator.renderers.markdown import MarkdownRenderer
 from standup_generator.renderers.text import TextRenderer
+from standup_generator.summarizers.base import Summarizer
 from standup_generator.summarizers.template import TemplateSummarizer
 from standup_generator.timerange import RangePreset, resolve_range
 
@@ -34,7 +40,10 @@ _stderr = Console(stderr=True)
 
 app = typer.Typer(
     name="standup",
-    help="Generate a standup summary from local git history.",
+    help=(
+        "Generate a standup summary from local git history.\n\n"
+        "Run with no arguments to open the interactive UI."
+    ),
     add_completion=False,
     no_args_is_help=False,
     rich_markup_mode="rich",
@@ -42,9 +51,14 @@ app = typer.Typer(
 )
 
 
-def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
+def run(
+    config: Config,
+    *,
+    now: datetime,
+    runner: GitRunner,
+    summarizer: Summarizer | None = None,
+) -> str:
     """Pure orchestration — testable with injected fakes."""
-    # Build final repo list: explicit repos + repos discovered from scan_dirs, deduped.
     repos: list[Path] = []
     seen: set[Path] = set()
     for repo in config.repos:
@@ -59,7 +73,6 @@ def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
                 seen.add(key)
                 repos.append(repo)
 
-    # Resolve author via git config if not set and all_authors is False.
     author: str | None = config.author
     if not config.all_authors and author is None and repos:
         try:
@@ -69,7 +82,6 @@ def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
         except Exception:
             logger.warning("Could not resolve git config user.email; including all authors.")
 
-    # Determine time window.
     since_arg: datetime | str
     until_arg: datetime | str
     since_dt: datetime
@@ -81,7 +93,6 @@ def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
         try:
             since_dt = datetime.fromisoformat(config.since)
         except ValueError:
-            # TODO(plan): approxidate strings cannot be parsed; best-effort use now
             since_dt = now
         until_dt = now
     else:
@@ -89,7 +100,6 @@ def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
         since_arg = since_dt
         until_arg = until_dt
 
-    # Collect commits from all repos.
     all_commits: list[Commit] = []
     for repo in repos:
         repo_commits = collect_commits(
@@ -102,12 +112,8 @@ def run(config: Config, *, now: datetime, runner: GitRunner) -> str:
         )
         all_commits.extend(repo_commits)
 
-    report = TemplateSummarizer().summarize(
-        all_commits,
-        since=since_dt,
-        until=until_dt,
-        author=author,
-    )
+    _summarizer: Summarizer = summarizer if summarizer is not None else TemplateSummarizer()
+    report = _summarizer.summarize(all_commits, since=since_dt, until=until_dt, author=author)
 
     renderer: Renderer = (
         TextRenderer() if config.output_format is OutputFormat.TEXT else MarkdownRenderer()
@@ -125,23 +131,19 @@ def _version_callback(value: bool) -> None:
 def main(
     repos: Annotated[
         list[Path] | None,
-        typer.Option("--repo", "-r", help="Repo path (repeatable). Default: config or CWD."),
+        typer.Option("--repo", "-r", help="Repo path (repeatable). Bypasses the UI."),
     ] = None,
     scan_dirs: Annotated[
         list[Path] | None,
-        typer.Option(
-            "--scan-dir",
-            "-s",
-            help="Directory to scan for git repos (repeatable).",
-        ),
+        typer.Option("--scan-dir", "-s", help="Directory to scan for git repos. Bypasses the UI."),
     ] = None,
     since: Annotated[
         str | None,
-        typer.Option("--since", help="Explicit start (ISO or approxidate). Overrides --range."),
+        typer.Option("--since", help="Explicit start date (ISO or approxidate). Bypasses the UI."),
     ] = None,
     until: Annotated[
         str | None,
-        typer.Option("--until", help="Explicit end. Default: now."),
+        typer.Option("--until", help="Explicit end date. Default: now."),
     ] = None,
     range_preset: Annotated[
         RangePreset,
@@ -149,7 +151,7 @@ def main(
     ] = RangePreset.LAST_WORKING_DAY,
     author: Annotated[
         str | None,
-        typer.Option("--author", "-a", help="Filter by author (name/email substring)."),
+        typer.Option("--author", "-a", help="Filter by author email/name substring."),
     ] = None,
     all_authors: Annotated[
         bool,
@@ -161,28 +163,24 @@ def main(
     ] = OutputFormat.TEXT,
     output: Annotated[
         Path | None,
-        typer.Option(
-            "--output",
-            "-o",
-            help="Write report to this file instead of stdout.",
-        ),
+        typer.Option("--output", "-o", help="Write report to file instead of stdout."),
     ] = None,
+    ai: Annotated[
+        bool,
+        typer.Option("--ai", help="Use Claude to write a narrative summary."),
+    ] = False,
+    model: Annotated[
+        str,
+        typer.Option("--model", help="Claude model for --ai.", show_default=True),
+    ] = "claude-haiku-4-5-20251001",
     include_merges: Annotated[
         bool,
         typer.Option("--include-merges", help="Include merge commits."),
     ] = False,
     config_path: Annotated[
         Path | None,
-        typer.Option("--config", "-c", help="Path to a config file."),
+        typer.Option("--config", "-c", help="Path to a TOML config file."),
     ] = None,
-    interactive: Annotated[
-        bool,
-        typer.Option(
-            "--interactive",
-            "-i",
-            help="Launch an interactive wizard to configure the report.",
-        ),
-    ] = False,
     verbose: Annotated[
         bool,
         typer.Option("--verbose", "-v", help="Log debug info to stderr."),
@@ -200,26 +198,21 @@ def main(
     """Generate a standup summary from local git history."""
     configure_logging(verbose)
 
-    output_file: Path | None = output
+    # ── Default: launch the full-screen TUI ───────────────────────────────────
+    # Any source flag (--repo, --scan-dir, --since) signals scripting intent and
+    # bypasses the TUI so the tool stays pipeable.
+    no_source = repos is None and scan_dirs is None and since is None
+    if no_source and sys.stdout.isatty():  # pragma: no cover
+        from standup_generator.tui import launch
 
+        launch()
+        return
+
+    # ── Non-interactive (scripting / CI) path ─────────────────────────────────
     try:
-        if interactive:  # pragma: no cover
-            from standup_generator.interactive import run_wizard
-
-            wizard = run_wizard()
-            resolved_repos = wizard.repos
-            resolved_scan_dirs = wizard.scan_dirs
-            range_preset = wizard.range_preset
-            fmt = wizard.output_format
-            if wizard.output_file is not None:
-                output_file = wizard.output_file
-        else:
-            resolved_repos = tuple(repos) if repos else None
-            resolved_scan_dirs = tuple(scan_dirs) if scan_dirs else None
-
         config = load_config(
-            repos=resolved_repos,
-            scan_dirs=resolved_scan_dirs,
+            repos=tuple(repos) if repos else None,
+            scan_dirs=tuple(scan_dirs) if scan_dirs else None,
             author=author,
             all_authors=all_authors,
             range_preset=range_preset,
@@ -232,12 +225,22 @@ def main(
         )
         now = datetime.now(UTC).astimezone()
 
-        with _stderr.status("[dim]Collecting commits…[/dim]", spinner="dots"):
-            result = run(config, now=now, runner=subprocess_runner)
+        chosen_summarizer: Summarizer
+        if ai:
+            from standup_generator.summarizers.claude import ClaudeSummarizer
 
-        if output_file is not None:
-            output_file.write_text(result, encoding="utf-8")
-            _stderr.print(f"[green]✓[/green] Report saved to [bold]{output_file}[/bold]")
+            chosen_summarizer = ClaudeSummarizer(model=model)
+            spinner_msg = "[dim]Collecting commits and generating AI summary…[/dim]"
+        else:
+            chosen_summarizer = TemplateSummarizer()
+            spinner_msg = "[dim]Collecting commits…[/dim]"
+
+        with _stderr.status(spinner_msg, spinner="dots"):
+            result = run(config, now=now, runner=subprocess_runner, summarizer=chosen_summarizer)
+
+        if output is not None:
+            output.write_text(result, encoding="utf-8")
+            _stderr.print(f"[green]✓[/green] Report saved to [bold]{output}[/bold]")
         else:
             typer.echo(result)
 
