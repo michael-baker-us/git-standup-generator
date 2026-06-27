@@ -17,7 +17,5 @@ def empty_line(report: StandupReport) -> str:
     since_str = fmt_datetime(report.since)
     until_str = fmt_datetime(report.until)
     if report.author:
-        return (
-            f"No commits found for {report.author} between {since_str} and {until_str}."
-        )
+        return f"No commits found for {report.author} between {since_str} and {until_str}."
     return f"No commits found between {since_str} and {until_str}."

@@ -49,8 +49,6 @@ class TextRenderer:
             for group in repo_summary.groups:
                 lines.append(f"  {group.title}")
                 for commit in group.commits:
-                    lines.append(
-                        f"    • {commit.subject:<{_SUBJECT_WIDTH}}{commit.short_sha}"
-                    )
+                    lines.append(f"    • {commit.subject:<{_SUBJECT_WIDTH}}{commit.short_sha}")
 
         return "\n".join(lines)

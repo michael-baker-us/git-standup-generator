@@ -33,6 +33,7 @@ def _make_failing_revparse_runner() -> GitRunner:
 
     return runner
 
+
 _FAKE_REPO = Path("/fake/repo")
 
 
@@ -160,7 +161,7 @@ class TestCollectCommits:
         assert c.body == "Implements RFC-compliant token rotation.\nCloses #42"
         assert c.files_changed == 2
         assert c.insertions == 23  # 15 + 8
-        assert c.deletions == 4   # 3 + 1
+        assert c.deletions == 4  # 3 + 1
 
     def test_timestamp_is_tz_aware(self, sample_log_text: str) -> None:
         commits = collect_commits(

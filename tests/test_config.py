@@ -48,7 +48,7 @@ def test_tilde_expansion(tmp_path: Path) -> None:
 
 def test_unknown_key_raises(tmp_path: Path) -> None:
     cfg = tmp_path / "standup.toml"
-    cfg.write_text('banana = true\n', encoding="utf-8")
+    cfg.write_text("banana = true\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="Unknown config keys"):
         load_config(config_path=cfg)
 

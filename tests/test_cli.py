@@ -205,6 +205,7 @@ def test_cli_standup_error_exits_1(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
     monkeypatch.chdir(tmp_path)
     import standup_generator.cli as cli_mod
+
     monkeypatch.setattr(cli_mod, "subprocess_runner", bad_runner)
 
     result = _CLI_RUNNER.invoke(app, [])
@@ -216,6 +217,7 @@ def test_cli_default_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     """Full CLI run with monkeypatched runner produces text output."""
     monkeypatch.chdir(tmp_path)
     import standup_generator.cli as cli_mod
+
     monkeypatch.setattr(cli_mod, "subprocess_runner", _make_runner(_SAMPLE_LOG))
 
     result = _CLI_RUNNER.invoke(app, [])
@@ -227,6 +229,7 @@ def test_cli_format_markdown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     """--format markdown produces markdown output."""
     monkeypatch.chdir(tmp_path)
     import standup_generator.cli as cli_mod
+
     monkeypatch.setattr(cli_mod, "subprocess_runner", _make_runner(_SAMPLE_LOG))
 
     result = _CLI_RUNNER.invoke(app, ["--format", "markdown"])
