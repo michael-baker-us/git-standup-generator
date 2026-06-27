@@ -31,6 +31,7 @@ packages = ["src/standup_generator"]
 [tool.pytest.ini_options]
 addopts = "-ra --cov=standup_generator --cov-report=term-missing"
 testpaths = ["tests"]
+markers = ["integration: end-to-end tests that use a real git subprocess"]
 
 [tool.mypy]
 python_version = "3.11"

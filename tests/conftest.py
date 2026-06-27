@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -34,6 +35,25 @@ def make_fake_runner(log_output: str) -> GitRunner:
         raise RuntimeError(f"Unexpected git call: git {' '.join(args)}")
 
     return runner
+
+
+def make_git_repo(path: Path, commits: list[tuple[str, str]]) -> Path:
+    """Create a real git repo in *path* with the given (filename, message) commits.
+
+    Sets local user.name and user.email so the test is hermetic — no global config required.
+    """
+
+    def _git(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=path, check=True, capture_output=True)
+
+    _git("init")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test User")
+    for filename, message in commits:
+        (path / filename).write_text(f"# {filename}\n")
+        _git("add", filename)
+        _git("commit", "-m", message)
+    return path
 
 
 def make_failing_revparse_runner() -> GitRunner:
