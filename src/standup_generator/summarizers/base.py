@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Protocol, Sequence
+
+from standup_generator.models import Commit, StandupReport
+
+
+class Summarizer(Protocol):
+    def summarize(
+        self,
+        commits: Sequence[Commit],
+        *,
+        since: datetime,
+        until: datetime,
+        author: str | None,
+    ) -> StandupReport: ...
